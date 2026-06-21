@@ -1,5 +1,5 @@
 /**
- * Video Speed Controller State Manager 
+ * Video Speed Controller State Manager
  * Tracks media elements for popup and keyboard commands.
  */
 
@@ -29,7 +29,7 @@ class VSCStateManager {
       element: controller.video,
       tagName: controller.video?.tagName,
       videoSrc: controller.video?.src || controller.video?.currentSrc,
-      created: Date.now()
+      created: Date.now(),
     };
 
     this.controllers.set(controller.controllerId, controllerInfo);
@@ -54,14 +54,18 @@ class VSCStateManager {
   getAllMediaElements() {
     const elements = [];
 
-    // Clean up disconnected controllers while iterating
-    for (const [id, info] of this.controllers) {
+    if (!this.controllers.size) {
+      document.querySelectorAll('video,audio').forEach((video) => {
+        if (video.vsc) {
+          this.registerController(video.vsc);
+        }
+      });
+    }
+
+    for (const info of this.controllers.values()) {
       const video = info.controller?.video || info.element;
       if (video && video.isConnected) {
         elements.push(video);
-      } else {
-        // Remove disconnected controller
-        this.controllers.delete(id);
       }
     }
 

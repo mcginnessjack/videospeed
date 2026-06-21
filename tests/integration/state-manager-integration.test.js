@@ -83,7 +83,7 @@ describe('StateManagerIntegration', () => {
     controller2.remove();
   });
 
-  it('StateManager handles disconnected elements gracefully', async () => {
+  it('StateManager preserves registration across a temporary disconnect', async () => {
     const config = window.VSC.videoSpeedConfig;
     await config.load();
 
@@ -101,11 +101,30 @@ describe('StateManagerIntegration', () => {
     // Remove the parent div (which contains the video) from DOM
     // This simulates a site removing a video player
     parent.remove();
+    expect(window.VSC.stateManager.getAllMediaElements()).toEqual([]);
+    expect(window.VSC.stateManager.controllers.size).toBe(1);
 
-    // getAllMediaElements should detect disconnected elements and clean up
-    const allMedia = window.VSC.stateManager.getAllMediaElements();
-    expect(allMedia.length).toBe(0);
-    expect(window.VSC.stateManager.controllers.size).toBe(0);
+    document.body.appendChild(parent);
+    expect(window.VSC.stateManager.getAllMediaElements()).toEqual([mockVideo]);
+  });
+
+  it('StateManager recovers an attached controller when registration is missing', async () => {
+    const config = window.VSC.videoSpeedConfig;
+    await config.load();
+
+    const actionHandler = new window.VSC.ActionHandler(config);
+
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+
+    const mockVideo = createMockVideo();
+    parent.appendChild(mockVideo);
+
+    new window.VSC.VideoController(mockVideo, parent, config, actionHandler);
+    window.VSC.stateManager.controllers.clear();
+
+    expect(window.VSC.stateManager.getAllMediaElements()).toEqual([mockVideo]);
+    expect(window.VSC.stateManager.controllers.size).toBe(1);
   });
 
   it('StateManager tracks multiple rapid controller registrations', async () => {
